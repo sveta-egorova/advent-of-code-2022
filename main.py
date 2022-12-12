@@ -1,7 +1,4 @@
-# This is a sample Python script.
-
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
+import time
 
 
 def find_max_calories(filename='data/day1_short'):
@@ -894,6 +891,20 @@ def find_monkey_business():
 
 def find_monkey_business_extra():
 
+    # monkey_state = [
+    #     [79, 98],
+    #     [54, 65, 75, 74],
+    #     [79, 60, 97],
+    #     [74]
+    # ]
+    #
+    # monkey_test = [
+    #     (lambda x: x * 19, 23, 2, 3),
+    #     (lambda x: x + 6, 19, 2, 0),
+    #     (lambda x: x * x, 13, 1, 3),
+    #     (lambda x: x + 3, 17, 0, 1)
+    # ]
+
     monkey_state = [
         [83, 97, 95, 67],
         [71, 70, 79, 88, 56, 70],
@@ -917,24 +928,38 @@ def find_monkey_business_extra():
 
     ]
 
-    monkey_items_inspected = [0] * len(monkey_state)
+    reduction_factor = 1
+    for factor in [test[1] for test in monkey_test]:
+        reduction_factor *= factor
+    print('reduction factor is: ', reduction_factor)
+
+    num_monkeys = len(monkey_state)
+    monkey_items_inspected = [0] * num_monkeys
     cur_round = 0
 
+    time_start = time.time()
     while cur_round < 10000:
-        for monkey in range(len(monkey_state)):
+        for monkey in range(num_monkeys):
             cur_state = monkey_state[monkey]
             cur_test = monkey_test[monkey]
             for item in cur_state:
                 monkey_items_inspected[monkey] += 1
                 new_worry_level = cur_test[0](item)
+                while new_worry_level > reduction_factor: # this is all factors multiplied by each other
+                    new_worry_level -= reduction_factor
                 # new_worry_level = int(new_worry_level / 3)
                 who_receives = cur_test[2] if new_worry_level % cur_test[1] == 0 else cur_test[3]
                 monkey_state[who_receives].append(new_worry_level)
             monkey_state[monkey] = []
         cur_round += 1
-        if cur_round % 1000 == 0:
-            print(cur_round)
-            print(monkey_items_inspected)
+        if cur_round % 500 == 0:
+            time_taken = time.time() - time_start
+            print(f'500 rounds up to {cur_round} took {time_taken} s')
+            print('cur_state: ', str(monkey_state))
+            print('items_inspected: ', monkey_items_inspected)
+            time_start = time.time()
+            # print(cur_round)
+            # print(monkey_items_inspected)
 
     # print(monkey_items_inspected)
 
