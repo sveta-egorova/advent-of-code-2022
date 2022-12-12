@@ -891,20 +891,6 @@ def find_monkey_business():
 
 def find_monkey_business_extra():
 
-    # monkey_state = [
-    #     [79, 98],
-    #     [54, 65, 75, 74],
-    #     [79, 60, 97],
-    #     [74]
-    # ]
-    #
-    # monkey_test = [
-    #     (lambda x: x * 19, 23, 2, 3),
-    #     (lambda x: x + 6, 19, 2, 0),
-    #     (lambda x: x * x, 13, 1, 3),
-    #     (lambda x: x + 3, 17, 0, 1)
-    # ]
-
     monkey_state = [
         [83, 97, 95, 67],
         [71, 70, 79, 88, 56, 70],
@@ -931,7 +917,7 @@ def find_monkey_business_extra():
     reduction_factor = 1
     for factor in [test[1] for test in monkey_test]:
         reduction_factor *= factor
-    print('reduction factor is: ', reduction_factor)
+    # print('reduction factor is: ', reduction_factor)
 
     num_monkeys = len(monkey_state)
     monkey_items_inspected = [0] * num_monkeys
@@ -954,9 +940,9 @@ def find_monkey_business_extra():
         cur_round += 1
         if cur_round % 500 == 0:
             time_taken = time.time() - time_start
-            print(f'500 rounds up to {cur_round} took {time_taken} s')
-            print('cur_state: ', str(monkey_state))
-            print('items_inspected: ', monkey_items_inspected)
+            # print(f'500 rounds up to {cur_round} took {time_taken} s')
+            # print('cur_state: ', str(monkey_state))
+            # print('items_inspected: ', monkey_items_inspected)
             time_start = time.time()
             # print(cur_round)
             # print(monkey_items_inspected)
