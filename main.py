@@ -1078,14 +1078,60 @@ def find_neighbours(cur_node, grid, visited, movement):
     # print('neighbors: ', neighbors)
     return neighbors
 
+
+def find_valid_neighbours(cur_node, grid):
+    grid_height = len(grid)
+    grid_width = len(grid[0])
+    cur_value = cur_node[2]
+
+    if cur_value == 'S':
+        cur_value = 'a'
+    if cur_value == 'E':
+        return None
+    neighbors = []
+    if cur_node[0] > 0:
+        up_value = grid[cur_node[0] - 1][cur_node[1]]
+        ord_to_check = ord('z') if up_value == 'E' else ord(up_value)
+        up_node = (cur_node[0] - 1, cur_node[1], up_value)
+        if ord_to_check - 1 <= ord(cur_value):
+            neighbors.append(up_node) # up
+    if cur_node[0] < grid_height - 1:
+        down_value = grid[cur_node[0] + 1][cur_node[1]]
+        ord_to_check = ord('z') if down_value == 'E' else ord(down_value)
+        down_node = (cur_node[0] + 1, cur_node[1], down_value)
+        if ord_to_check - 1 <= ord(cur_value):
+            neighbors.append(down_node) # down
+    if cur_node[1] > 0:
+        left_value = grid[cur_node[0]][cur_node[1] - 1]
+        ord_to_check = ord('z') if left_value == 'E' else ord(left_value)
+        left_node = (cur_node[0], cur_node[1] - 1, left_value)
+        if ord_to_check - 1 <= ord(cur_value):
+            neighbors.append(left_node) # left
+    if cur_node[1] < grid_width - 1:
+        right_value = grid[cur_node[0]][cur_node[1] + 1]
+        ord_to_check = ord('z') if right_value == 'E' else ord(right_value)
+        right_node = (cur_node[0], cur_node[1] + 1, right_value)
+        if ord_to_check - 1 <= ord(cur_value):
+            neighbors.append(right_node) # right
+    # print('neighbors: ', neighbors)
+    return neighbors
+
+
 def find_quickest_route(filename):
     grid = []
     cur_row = 0
     # a_counter = 0
-    a_list = []
+    # count_letters = {}
+    b_list = []
+    min_steps_for_all_a = []
     with open(filename) as file:
         for line in file:
             cur_row_char = list(line.strip())
+            # for char in cur_row_char:
+                # if char in count_letters:
+                #     count_letters[char] += 1
+                # else:
+                #     count_letters[char] = 1
             if 'S' in cur_row_char:
                 start_row = cur_row
                 start_col = cur_row_char.index('S')
@@ -1093,40 +1139,111 @@ def find_quickest_route(filename):
                 end_row = cur_row
                 end_col = cur_row_char.index('E')
             for ix in range(len(cur_row_char)):
-                if cur_row_char[ix] == 'a':
-                    a_list.append((cur_row, ix))
+                if cur_row_char[ix] == 'b':
+                    b_list.append((cur_row, ix, 'b'))
             grid.append(cur_row_char)
             cur_row += 1
 
-    print('Total number of a: ', len(a_list))
+    # print(count_letters)
+    # return
+    print('Total number of b: ', len(b_list))
 
     time_start = time.time()
 
-    start_node = (start_row, start_col, 'S')
     end_node = (end_row, end_col, 'E')
     grid_height = len(grid)
     grid_width = len((grid[0]))
     # neighbors = deque()
     # neighbors.append(start_node)
-    neighbors = [start_node]
+    # neighbors = [start_node]
 
-    movement = ''
-    step_history = set()
-    # movement_diagram = ('.'* grid_width + '\n') * grid_height
-    # movement_diagram = [['.' for i in range(grid_width)] for i in range(grid_height)]
-    # print(movement_diagram)
 
-    initial_input = (9999, movement, step_history)
-    steps_to_reach_ix = [[initial_input for i in range(grid_width)] for i in range(grid_height)]
-    steps_to_reach_ix[start_row][start_col] = (0, movement, step_history)
     # print(steps_to_reach_ix[0][0][1])
 
     # steps_to_reach_ix = [[9999 for i in range(grid_width)] for i in range(grid_height)]
     # steps_to_reach_ix[start_row][start_col] = 0
 
-    level_of_the_end = 9999
-    cur_level = 0
-    found_solution = False
+    initial_neighbor_input = set()
+    neighbors_df = [[initial_neighbor_input for i in range(grid_width)] for i in range(grid_height)]
+    # print('start creating neighbors df')
+
+    for row_ix in range(grid_height):
+        for el_ix in range(grid_width):
+            cur_node = (row_ix, el_ix, grid[row_ix][el_ix])
+            neighbors_df[row_ix][el_ix] = find_valid_neighbours(cur_node, grid)
+    # print('finish creating neighbors df')
+
+
+    movement = ''
+    step_history = []
+    # movement_diagram = ('.'* grid_width + '\n') * grid_height
+    # movement_diagram = [['.' for i in range(grid_width)] for i in range(grid_height)]
+    # print(movement_diagram)
+
+
+    # initial_input = (9999, movement, step_history)
+    default_input = (9999, step_history)
+
+    steps_and_history_to_reach_ix_general = [[default_input for i in range(grid_width)] for i in range(grid_height)]
+    # steps_to_reach_ix = [[initial_input for i in range(grid_width)] for i in range(grid_height)]
+
+    solutions = []
+    b_counter = 0
+
+    time_start = time.time()
+
+    for start_node in b_list:
+        b_counter += 1
+        # start_node = (start_row, start_col, 'S')
+
+        start_history = step_history.copy()
+        start_history.append(start_node)
+
+        steps_and_history_to_reach_ix = steps_and_history_to_reach_ix_general.copy()
+        steps_and_history_to_reach_ix[start_row][start_col] = (0, start_history)
+        # steps_to_reach_ix[start_row][start_col] = (0, movement, step_history)
+
+        level_of_the_end = 9999
+        cur_level = 0
+        found_solution = False
+        neighbors = [start_node]
+
+        while neighbors and not found_solution:
+            next_level_neighbors = []
+            cur_level += 1
+            # print(cur_level)
+            # print(neighbors)
+
+            for old_el in neighbors:
+                # print(old_el)
+                optimal_history_to_this_point = steps_and_history_to_reach_ix[old_el[0]][old_el[1]][1]
+                # print('optimal_history_to_this_point', optimal_history_to_this_point)
+                valid_neighbors = [el for el in neighbors_df[old_el[0]][old_el[1]] if el not in optimal_history_to_this_point]
+                for proposed_neighbour in valid_neighbors:
+                    previous_optimal_level = steps_and_history_to_reach_ix[proposed_neighbour[0]][proposed_neighbour[1]][0]
+                    if previous_optimal_level > cur_level:
+                        proposed_history = optimal_history_to_this_point.copy()
+                        proposed_history.append(proposed_neighbour)
+                        steps_and_history_to_reach_ix[proposed_neighbour[0]][proposed_neighbour[1]] = (cur_level, proposed_history)
+                    if proposed_neighbour == end_node:
+                        found_solution = True
+                        level_of_the_end = cur_level
+                    if proposed_neighbour not in next_level_neighbors:
+                        next_level_neighbors.append(proposed_neighbour)
+
+            neighbors = next_level_neighbors
+        if b_counter % 5 == 0:
+            time_it_took = time.time() - time_start
+            print(f'Start positions analysed: {b_counter}')
+            print(f'Running for one start position took {time_it_took} s')
+            time_start = time.time()
+        winning_strategy = steps_and_history_to_reach_ix[end_node[0]][end_node[1]]
+        print('took this number of steps:', winning_strategy[0])
+        solutions.append(winning_strategy[0])
+    return solutions
+
+    # level_of_the_end = 9999
+    # cur_level = 0
     # visited = set()
     while neighbors and not found_solution:
         # print('cycle started with neighbors: ', neighbors)
@@ -1147,23 +1264,10 @@ def find_quickest_route(filename):
                 proposed_node = new_el[0]
                 proposed_movement = new_el[1]
                 proposed_history = new_el[2]
-                # if cur_level != len(proposed_movement):
-                #     print(proposed_movement)
-                # old_optimal_movement_to_this_point = steps_to_reach_ix[proposed_node[0]][proposed_node[1]][1]
-                # print(f'Optimal to level {cur_level} and element {new_el} is {optimal_movement_to_this_point}')
                 previous_optimal_level = steps_to_reach_ix[proposed_node[0]][proposed_node[1]][0]
-                # old_optimal_movement_to_this_point = steps_to_reach_ix[proposed_node[0]][proposed_node[1]][1]
                 if previous_optimal_level > cur_level:
-                    # print(f'Found faster route! Previously movement to {proposed_node} took {len(old_optimal_movement_to_this_point)} '
-                    #       f'or {previous_optimal_level}, now it will take {len(proposed_movement)} or {cur_level}')
-                    # print(proposed_movement)
                     steps_to_reach_ix[proposed_node[0]][proposed_node[1]] = (cur_level, proposed_movement, proposed_history)
-                # else:
-                    # print(
-                    #     f'This route is inefficient! Previously movement to {proposed_node} took {len(old_optimal_movement_to_this_point)} '
-                    #     f'or {previous_optimal_level}, now it will take {len(proposed_movement)} or {cur_level}')
-                # print(f'Optimal movement to element {proposed_node} is '
-                #       f'{steps_to_reach_ix[proposed_node[0]][proposed_node[1]][1]}')
+
                 if proposed_node == end_node:
                     # print(cur_level)
                     found_solution = True
@@ -1176,8 +1280,14 @@ def find_quickest_route(filename):
         # print(steps_to_reach_ix)
         # print('neighbors after old element was deleted', neighbors)
 
+    winning_strategy = steps_to_reach_ix[end_node[0]][end_node[1]]
+    # print(winning_strategy)
+    winning_history = winning_strategy[2]
+
     time_took = time.time() - time_start
     print(f'One iteration took {time_took} s')
+
+    # for new_a in a_list:
 
     print('This is the diagram as the sequence of optimal steps:')
     print(proposed_movement)
@@ -1300,4 +1410,4 @@ if __name__ == '__main__':
 
     # TASK 12.1
     res = find_quickest_route('data/day12')
-    # print(res)
+    print(min(res))
