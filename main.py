@@ -954,131 +954,6 @@ def find_monkey_business_extra():
     return top_monkey_businesses[0] * top_monkey_businesses[1]
 
 
-from collections import deque
-
-class TreeNode:
-    def __init__(self, pos, grid, cur_level, visited_by_parent, grid_completion):
-        self.position = pos
-        self.val = grid[pos[0]][pos[1]]
-        self.grid = grid
-        self.cur_level = cur_level
-        self.visited_by_parent = visited_by_parent
-        self.grid_completion = grid_completion
-        self.left, self.right, self.up, self.down = None, None, None, None
-        print('level being done: ', self.cur_level)
-        # this keeps only the level number for the shortest path
-        if self.grid_completion[pos[0]][pos[1]] >= self.cur_level:
-            if (self.grid_completion[pos[0]][pos[1]] < 50 and self.grid_completion[pos[0]][pos[1]] > self.cur_level):
-                print(f'Congrats, you have just found a faster route to {pos}, '
-                      f'it can be reached in {self.cur_level} levels and not {self.grid_completion[pos[0]][pos[1]]}')
-            self.grid_completion[pos[0]][pos[1]] = self.cur_level
-        else:
-            print(f'Oh, this is a long route to {pos}, '
-                  f'it can be reached in {self.grid_completion[pos[0]][pos[1]]} levels and not {self.cur_level}')
-            self.cur_level = self.grid_completion[pos[0]][pos[1]]
-        print('grid_completion: ', grid_completion)
-        if self.val == 26:
-            print('GOTCHA!')
-        grid_height = len(grid)
-        grid_width = len(grid[0])
-        if self.cur_level < 100:
-            if self.position[0] > 0:
-                position_up = (self.position[0] - 1, self.position[1])
-                new_value = grid[position_up[0]][position_up[1]]
-                # This prevents stepping on the same blocks as used before in that path, and keeps only valid moves
-                if position_up not in self.visited_by_parent and new_value <= self.val + 1:
-                    print(f'{chr(self.val+97)} on {pos} go up to {chr(new_value+97)}')
-                    new_visits = self.visited_by_parent + [position_up]
-                    self.up = TreeNode(position_up, self.grid, self.cur_level + 1, new_visits, self.grid_completion)
-            if self.position[0] < grid_height - 1:
-                position_down = (self.position[0] + 1, self.position[1])
-                new_value = grid[position_down[0]][position_down[1]]
-                if position_down not in self.visited_by_parent and new_value <= self.val + 1:
-                    print(f'{chr(self.val+97)} on {pos} go down to {chr(new_value+97)}')
-                    new_visits = self.visited_by_parent + [position_down]
-                    self.down = TreeNode(position_down, self.grid, self.cur_level + 1, new_visits, self.grid_completion)
-            if self.position[1] > 0:
-                position_left = (self.position[0], self.position[1] - 1)
-                new_value = grid[position_left[0]][position_left[1]]
-                if position_left not in self.visited_by_parent and new_value <= self.val + 1:
-                    print(f'{chr(self.val+97)} on {pos} go left to {chr(new_value+97)}')
-                    new_visits = self.visited_by_parent + [position_left]
-                    self.left = TreeNode(position_left, self.grid, self.cur_level + 1, new_visits, self.grid_completion)
-            if self.position[1] < grid_width - 1:
-                position_right = (self.position[0], self.position[1] + 1)
-                new_value = grid[position_right[0]][position_right[1]]
-                if position_right not in self.visited_by_parent and new_value <= self.val + 1:
-                    print(f'{chr(self.val+97)} on {pos} go right to {chr(new_value+97)}')
-                    new_visits = self.visited_by_parent + [position_right]
-                    self.right = TreeNode(position_right, self.grid, self.cur_level + 1, new_visits, self.grid_completion)
-
-
-
-def find_neighbours(cur_node, grid, visited, movement):
-    grid_height = len(grid)
-    grid_width = len(grid[0])
-    cur_value = cur_node[2]
-    # print('cur_node: ', cur_node)
-    # print('visited: ', visited)
-
-    # visited.add(cur_node)
-    if cur_value == 'S':
-        cur_value = 'a'
-    if cur_value == 'E':
-        return None
-    neighbors = []
-    if cur_node[0] > 0:
-        up_value = grid[cur_node[0] - 1][cur_node[1]]
-        up_node = (cur_node[0] - 1, cur_node[1], up_value)
-        new_history = visited.copy()
-        new_history.add(up_node)
-        up_node_with_history = (up_node, movement + '^', new_history)
-        if up_value == 'E':
-            if ord('z') - 1 <= ord(cur_value) and up_node not in visited:
-                neighbors.append(up_node_with_history) # up
-        else:
-            if ord(up_value) - 1 <= ord(cur_value) and up_node not in visited:
-                neighbors.append(up_node_with_history) # up
-    if cur_node[0] < grid_height - 1:
-        down_value = grid[cur_node[0] + 1][cur_node[1]]
-        down_node = (cur_node[0] + 1, cur_node[1], down_value)
-        new_history = visited.copy()
-        new_history.add(down_node)
-        down_node_with_history = (down_node, movement + 'v', new_history)
-        if down_value == 'E':
-            if ord('z') - 1 <= ord(cur_value) and down_value not in visited:
-                neighbors.append(down_node_with_history) # down
-        else:
-            if ord(down_value) - 1 <= ord(cur_value) and down_node not in visited:
-                neighbors.append(down_node_with_history) # down
-    if cur_node[1] > 0:
-        left_value = grid[cur_node[0]][cur_node[1] - 1]
-        left_node = (cur_node[0], cur_node[1] - 1, left_value)
-        new_history = visited.copy()
-        new_history.add(left_node)
-        left_node_with_history = (left_node, movement + '<', new_history)
-        if left_value == 'E':
-            if ord('z') - 1 <= ord(cur_value) and left_value not in visited:
-                neighbors.append(left_node_with_history) # left
-        else:
-            if ord(left_value) - 1 <= ord(cur_value) and left_node not in visited:
-                neighbors.append(left_node_with_history) # left
-    if cur_node[1] < grid_width - 1:
-        right_value = grid[cur_node[0]][cur_node[1] + 1]
-        right_node = (cur_node[0], cur_node[1] + 1, right_value)
-        new_history = visited.copy()
-        new_history.add(right_node)
-        right_node_with_history = (right_node, movement + '>', new_history)
-        if right_value == 'E':
-            if ord('z') - 1 <= ord(cur_value) and right_value not in visited:
-                neighbors.append(right_node_with_history) # right
-        else:
-            if ord(right_value) - 1 <= ord(cur_value) and right_node not in visited:
-                neighbors.append(right_node_with_history) # right
-    # print('neighbors: ', neighbors)
-    return neighbors
-
-
 def find_valid_neighbours(cur_node, grid):
     grid_height = len(grid)
     grid_width = len(grid[0])
@@ -1127,11 +1002,6 @@ def find_quickest_route(filename):
     with open(filename) as file:
         for line in file:
             cur_row_char = list(line.strip())
-            # for char in cur_row_char:
-                # if char in count_letters:
-                #     count_letters[char] += 1
-                # else:
-                #     count_letters[char] = 1
             if 'S' in cur_row_char:
                 start_row = cur_row
                 start_col = cur_row_char.index('S')
@@ -1144,8 +1014,6 @@ def find_quickest_route(filename):
             grid.append(cur_row_char)
             cur_row += 1
 
-    # print(count_letters)
-    # return
     print('Total number of b: ', len(b_list))
 
     time_start = time.time()
@@ -1153,39 +1021,21 @@ def find_quickest_route(filename):
     end_node = (end_row, end_col, 'E')
     grid_height = len(grid)
     grid_width = len((grid[0]))
-    # neighbors = deque()
-    # neighbors.append(start_node)
-    # neighbors = [start_node]
-
-
-    # print(steps_to_reach_ix[0][0][1])
-
-    # steps_to_reach_ix = [[9999 for i in range(grid_width)] for i in range(grid_height)]
-    # steps_to_reach_ix[start_row][start_col] = 0
 
     initial_neighbor_input = set()
     neighbors_df = [[initial_neighbor_input for i in range(grid_width)] for i in range(grid_height)]
-    # print('start creating neighbors df')
 
     for row_ix in range(grid_height):
         for el_ix in range(grid_width):
             cur_node = (row_ix, el_ix, grid[row_ix][el_ix])
             neighbors_df[row_ix][el_ix] = find_valid_neighbours(cur_node, grid)
-    # print('finish creating neighbors df')
 
 
     movement = ''
     step_history = []
-    # movement_diagram = ('.'* grid_width + '\n') * grid_height
-    # movement_diagram = [['.' for i in range(grid_width)] for i in range(grid_height)]
-    # print(movement_diagram)
-
-
-    # initial_input = (9999, movement, step_history)
     default_input = (9999, step_history)
 
     steps_and_history_to_reach_ix_general = [[default_input for i in range(grid_width)] for i in range(grid_height)]
-    # steps_to_reach_ix = [[initial_input for i in range(grid_width)] for i in range(grid_height)]
 
     solutions = []
     b_counter = 0
@@ -1194,16 +1044,13 @@ def find_quickest_route(filename):
 
     for start_node in b_list:
         b_counter += 1
-        # start_node = (start_row, start_col, 'S')
 
         start_history = step_history.copy()
         start_history.append(start_node)
 
         steps_and_history_to_reach_ix = steps_and_history_to_reach_ix_general.copy()
         steps_and_history_to_reach_ix[start_row][start_col] = (0, start_history)
-        # steps_to_reach_ix[start_row][start_col] = (0, movement, step_history)
 
-        level_of_the_end = 9999
         cur_level = 0
         found_solution = False
         neighbors = [start_node]
@@ -1211,13 +1058,9 @@ def find_quickest_route(filename):
         while neighbors and not found_solution:
             next_level_neighbors = []
             cur_level += 1
-            # print(cur_level)
-            # print(neighbors)
 
             for old_el in neighbors:
-                # print(old_el)
                 optimal_history_to_this_point = steps_and_history_to_reach_ix[old_el[0]][old_el[1]][1]
-                # print('optimal_history_to_this_point', optimal_history_to_this_point)
                 valid_neighbors = [el for el in neighbors_df[old_el[0]][old_el[1]] if el not in optimal_history_to_this_point]
                 for proposed_neighbour in valid_neighbors:
                     previous_optimal_level = steps_and_history_to_reach_ix[proposed_neighbour[0]][proposed_neighbour[1]][0]
@@ -1227,7 +1070,6 @@ def find_quickest_route(filename):
                         steps_and_history_to_reach_ix[proposed_neighbour[0]][proposed_neighbour[1]] = (cur_level, proposed_history)
                     if proposed_neighbour == end_node:
                         found_solution = True
-                        level_of_the_end = cur_level
                     if proposed_neighbour not in next_level_neighbors:
                         next_level_neighbors.append(proposed_neighbour)
 
@@ -1241,82 +1083,6 @@ def find_quickest_route(filename):
         print('took this number of steps:', winning_strategy[0])
         solutions.append(winning_strategy[0])
     return solutions
-
-    # level_of_the_end = 9999
-    # cur_level = 0
-    # visited = set()
-    while neighbors and not found_solution:
-        # print('cycle started with neighbors: ', neighbors)
-        next_level_neighbors = []
-        # print(cur_level)
-        cur_level += 1
-
-        for old_el in neighbors:
-            optimal_movement_to_this_point = steps_to_reach_ix[old_el[0]][old_el[1]][1]
-            optimal_history_to_this_point = steps_to_reach_ix[old_el[0]][old_el[1]][2]
-            # print(f'Optimal to level {cur_level-1} and element {old_el} is {optimal_movement_to_this_point}')
-            new_neighbors = find_neighbours(old_el, grid, optimal_history_to_this_point, optimal_movement_to_this_point)
-            if new_neighbors is None:
-                level_of_the_end = cur_level - 1
-                break
-            # print(new_neighbors)
-            for new_el in new_neighbors:
-                proposed_node = new_el[0]
-                proposed_movement = new_el[1]
-                proposed_history = new_el[2]
-                previous_optimal_level = steps_to_reach_ix[proposed_node[0]][proposed_node[1]][0]
-                if previous_optimal_level > cur_level:
-                    steps_to_reach_ix[proposed_node[0]][proposed_node[1]] = (cur_level, proposed_movement, proposed_history)
-
-                if proposed_node == end_node:
-                    # print(cur_level)
-                    found_solution = True
-                    level_of_the_end = cur_level
-                if proposed_node not in next_level_neighbors:
-                    next_level_neighbors.append(proposed_node)
-                # print('neighbors after element was appended', neighbors)
-
-        neighbors = next_level_neighbors
-        # print(steps_to_reach_ix)
-        # print('neighbors after old element was deleted', neighbors)
-
-    winning_strategy = steps_to_reach_ix[end_node[0]][end_node[1]]
-    # print(winning_strategy)
-    winning_history = winning_strategy[2]
-
-    time_took = time.time() - time_start
-    print(f'One iteration took {time_took} s')
-
-    # for new_a in a_list:
-
-    print('This is the diagram as the sequence of optimal steps:')
-    print(proposed_movement)
-    # print('\n')
-
-    print(f'It took {len(proposed_movement)} steps, corresponding to {level_of_the_end} level')
-
-    movement_diagram = [['.' for i in range(grid_width)] for i in range(grid_height)]
-    cur_pos_for_diagram = (start_row, start_col)
-    for i in range(level_of_the_end):
-        this_step = proposed_movement[i]
-        movement_diagram[cur_pos_for_diagram[0]][cur_pos_for_diagram[1]] = this_step #<>^v
-        if this_step == '^':
-            cur_pos_for_diagram = (cur_pos_for_diagram[0] - 1, cur_pos_for_diagram[1])
-        elif this_step == 'v':
-            cur_pos_for_diagram = (cur_pos_for_diagram[0] + 1, cur_pos_for_diagram[1])
-        elif this_step == '<':
-            cur_pos_for_diagram = (cur_pos_for_diagram[0], cur_pos_for_diagram[1] - 1)
-        elif this_step == '>':
-            cur_pos_for_diagram = (cur_pos_for_diagram[0], cur_pos_for_diagram[1] + 1)
-
-    movement_diagram_as_str = ''
-    for row in movement_diagram:
-        cur_row = ''.join(row) + '\n'
-        movement_diagram_as_str += cur_row
-
-    print('This is the 2D diagram from start to end:')
-    print(movement_diagram_as_str)
-    return level_of_the_end
 
 
 # Press the green button in the gutter to run the script.
