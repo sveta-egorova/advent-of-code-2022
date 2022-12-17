@@ -1085,6 +1085,104 @@ def find_quickest_route(filename):
     return solutions
 
 
+
+def get_next_array_element(pointer, level, array_char):
+    cur_element = ''
+    for char in array_char.strip()[pointer:]:
+        pointer += 1
+        if char == ',' and cur_element:
+            break
+        elif char == ',' and not cur_element:
+            continue
+        elif char == '[':
+            level += 1
+            continue
+        elif char == ']' and cur_element:
+            pointer -= 1
+            break
+        elif char == ']' and not cur_element:
+            level -= 1
+            continue
+        else:
+            cur_element += char
+    #
+    # print('cur_element: ', cur_element)
+    # print('pointer: ', pointer)
+    # print('level: ', level)
+
+    return cur_element, level, pointer
+
+
+# def compare_array_elements(element_first, element_second):
+#     valid_combo = False
+#     if not element_second:
+#         return valid_combo
+#     if not element_first:
+#         valid_combo = True
+#         return valid_combo
+#     valid_combo = element_first < element_second
+#     return valid_combo
+
+
+def compare_pairs_of_arrays(filename):
+    first_array_char = ''
+    second_array_char = ''
+    results = {}
+    pointer_first = 0
+    pointer_second = 0
+    level_first = 0
+    level_second = 0
+    cur_pair = 1
+
+    # first array can run out of elements, the second one can't
+    with open(filename) as file:
+        for line in file:
+            if line == '\n':
+                first_array_char = ''
+                second_array_char = ''
+                pointer_first, pointer_second, level_first, level_second = 0, 0, 0, 0
+                continue
+            if not first_array_char:
+                first_array_char = line
+                continue
+            if not second_array_char:
+                second_array_char = line
+            if first_array_char and second_array_char:
+                valid_combo = True
+                result_found = False
+                while not result_found:
+                    element_first, level_first, pointer_first = get_next_array_element(pointer_first,
+                                                                                       level_first,
+                                                                                       first_array_char)
+                    element_second, level_second, pointer_second = get_next_array_element(pointer_second,
+                                                                                          level_second,
+                                                                                          second_array_char)
+                    # valid_combo = compare_array_elements(element_first, element_second)
+
+                    if not element_first and not element_second:
+                        valid_combo = False
+                        result_found = True
+                    elif element_first == element_second:
+                        continue
+                    elif element_first < element_second:
+                        result_found = True
+                    elif not element_first and element_second:
+                        result_found = True
+                    elif element_first and not element_second:
+                        valid_combo = False
+                        result_found = True
+                    elif int(element_first) > int(element_second):
+                        valid_combo = False
+                        result_found = True
+                results[cur_pair] = valid_combo
+                first_array_char = ''
+                second_array_char = ''
+                cur_pair += 1
+                continue
+            # cur_row_char = list(line.strip())
+    indices_true = [ix for ix, value in results.items() if value == True]
+    print(sum(indices_true))
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     # TASK 1.1
@@ -1174,6 +1272,10 @@ if __name__ == '__main__':
     # monkey_business = find_monkey_business_extra()
     # print(monkey_business)
 
-    # TASK 12.1
-    res = find_quickest_route('data/day12')
-    print(min(res))
+    # TASK 12
+    # res = find_quickest_route('data/day12')
+    # print(min(res))
+
+    # TASK 13.1
+    # get_next_array_element(pointer=15, level=1, array_char='[10,1,[3,[8]],1]')
+    compare_pairs_of_arrays('data/day13')
