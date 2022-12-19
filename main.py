@@ -1124,7 +1124,6 @@ def compare_elements(list1, list2):
         return compare_elements(list1[1:], list2[1:])
 
 
-
 def compare_pairs_of_arrays(filename):
 
     results = {}
@@ -1154,9 +1153,43 @@ def compare_pairs_of_arrays(filename):
                 cur_pair += 1
                 continue
 
-    print(results)
+    # print(results)
     indices_true = [ix for ix, value in results.items() if value == 'Correct']
-    print(sum(indices_true))
+    return sum(indices_true)
+
+
+def sort_packages(filename):
+
+    all_packages = []
+
+    with open(filename) as file:
+        for line in file:
+            if line == '\n':
+                continue
+            else:
+                array = get_list(line.strip())
+                all_packages.append(array)
+
+    divider_package_1 = [[2]]
+    divider_package_2 = [[6]]
+    all_packages.append(divider_package_1)
+    all_packages.append(divider_package_2)
+    new_index_1 = None
+    new_index_2 = None
+
+    for i in range(1, len(all_packages)):
+        cur_package = all_packages[i]
+        j = i-1
+        while j >=0 and compare_elements(cur_package, all_packages[j]) == 'Correct':
+            all_packages[j+1] = all_packages[j]
+            j -= 1
+        all_packages[j + 1] = cur_package
+        if i == len(all_packages) - 2:
+            new_index_1 = j + 1 + 1
+        if i == len(all_packages) - 1:
+            new_index_2 = j + 1 + 1
+
+    return new_index_1 * new_index_2
 
 
 # Press the green button in the gutter to run the script.
@@ -1253,4 +1286,9 @@ if __name__ == '__main__':
     # print(min(res))
 
     # TASK 13.1
-    compare_pairs_of_arrays('data/day13') # 5041 is incorrect, 5812 is also incorrect, 4684 is incorrect, 5227 is incorrect
+    # indices_true = compare_pairs_of_arrays('data/day13')
+    # print(indices_true)
+
+    # TASK 13.2
+    divider_indices = sort_packages('data/day13')
+    print(divider_indices)
