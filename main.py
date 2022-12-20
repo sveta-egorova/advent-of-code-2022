@@ -1180,7 +1180,7 @@ def sort_packages(filename):
     for i in range(1, len(all_packages)):
         cur_package = all_packages[i]
         j = i-1
-        while j >=0 and compare_elements(cur_package, all_packages[j]) == 'Correct':
+        while j >= 0 and compare_elements(cur_package, all_packages[j]) == 'Correct':
             all_packages[j+1] = all_packages[j]
             j -= 1
         all_packages[j + 1] = cur_package
@@ -1190,6 +1190,99 @@ def sort_packages(filename):
             new_index_2 = j + 1 + 1
 
     return new_index_1 * new_index_2
+
+
+from bisect import bisect
+
+
+def find_rock_formations(filename):
+
+    all_rock_coordinates = set()
+    with open(filename) as file:
+        for line in file:
+            corner_elements = line.strip().split(' -> ')
+            cur_x = int(corner_elements[0].split(',')[0])
+            cur_y = int(corner_elements[0].split(',')[1])
+            all_rock_coordinates.add((cur_x, cur_y))
+            for next_element in corner_elements[1:]:
+                next_x = int(next_element.split(',')[0])
+                next_y = int(next_element.split(',')[1])
+                all_rock_coordinates.add((next_x, next_y))
+                if next_x == cur_x:
+                    y_range = range(min(cur_y, next_y), max(cur_y, next_y))
+                    for one_y in y_range:
+                        all_rock_coordinates.add((cur_x, one_y))
+                if next_y == cur_y:
+                    x_range = range(min(cur_x, next_x), max(cur_x, next_x))
+                    for one_x in x_range:
+                        all_rock_coordinates.add((one_x, cur_y))
+                cur_x = next_x
+                cur_y = next_y
+
+    all_blocks = {}
+    for x,y in all_rock_coordinates:
+        if x not in all_blocks:
+            all_blocks[x] = [y]
+        else:
+            all_blocks[x].insert(bisect(all_blocks[x], y), y)
+
+    cur_sand = 0
+    fell_into_the_void = False
+
+    while True:
+        # print(cur_sand)
+        if fell_into_the_void:
+            return cur_sand - 1
+        cur_sand += 1
+        start_x = 500
+        start_y = 0
+        x_cur, y_cur = start_x, min(all_blocks[start_x]) - 1
+        left_available = True
+        right_available = True
+        while (left_available or right_available) and not fell_into_the_void:
+            # GO DOWN LEFT
+            x_down_left, y_down_left = x_cur - 1, y_cur + 1
+            if x_down_left in all_blocks:
+                # means it is not complete void
+                if y_down_left not in all_blocks[x_down_left]:
+                    # means that the down left is available
+                    # see where it moves
+
+                    position_to_insert = bisect(all_blocks[x_down_left], y_down_left)
+                    if position_to_insert == len(all_blocks[x_down_left]):
+                        fell_into_the_void = True
+                    else:
+                        y_closest_down = all_blocks[x_down_left][position_to_insert] - 1
+                        x_cur, y_cur = x_down_left, y_closest_down
+                    continue
+                else:
+                    left_available = False
+            else:
+                # this falls into the void
+                fell_into_the_void = True
+
+            # GO DOWN RIGHT
+            x_down_right, y_down_right = x_cur + 1, y_cur + 1
+            if x_down_right in all_blocks:
+                # means it is not complete void
+                if y_down_right not in all_blocks[x_down_right]:
+                    # means that the down right is available
+                    # see where it moves
+                    position_to_insert = bisect(all_blocks[x_down_right], y_down_right)
+                    if position_to_insert == len(all_blocks[x_down_right]):
+                        fell_into_the_void = True
+                    else:
+                        y_closest_down = all_blocks[x_down_right][position_to_insert] - 1
+                        x_cur, y_cur = x_down_right, y_closest_down
+                    continue
+                else:
+                    right_available = False
+            else:
+                # this falls into the void
+                fell_into_the_void = True
+
+        all_blocks[x_cur].insert(bisect(all_blocks[x_cur], y_cur), y_cur)
+
 
 
 # Press the green button in the gutter to run the script.
@@ -1290,5 +1383,9 @@ if __name__ == '__main__':
     # print(indices_true)
 
     # TASK 13.2
-    divider_indices = sort_packages('data/day13')
-    print(divider_indices)
+    # divider_indices = sort_packages('data/day13')
+    # print(divider_indices)
+
+    # TASK 14.1
+    sand_before_void = find_rock_formations('data/day14')
+    print(sand_before_void)
