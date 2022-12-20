@@ -1195,7 +1195,7 @@ def sort_packages(filename):
 from bisect import bisect
 
 
-def find_rock_formations(filename):
+def find_sand_units_before_void(filename):
 
     all_rock_coordinates = set()
     with open(filename) as file:
@@ -1282,6 +1282,105 @@ def find_rock_formations(filename):
                 fell_into_the_void = True
 
         all_blocks[x_cur].insert(bisect(all_blocks[x_cur], y_cur), y_cur)
+
+def find_sand_units_before_it_stops_falling(filename):
+
+    all_rock_coordinates = set()
+    with open(filename) as file:
+        for line in file:
+            corner_elements = line.strip().split(' -> ')
+            cur_x = int(corner_elements[0].split(',')[0])
+            cur_y = int(corner_elements[0].split(',')[1])
+            all_rock_coordinates.add((cur_x, cur_y))
+            for next_element in corner_elements[1:]:
+                next_x = int(next_element.split(',')[0])
+                next_y = int(next_element.split(',')[1])
+                all_rock_coordinates.add((next_x, next_y))
+                if next_x == cur_x:
+                    y_range = range(min(cur_y, next_y), max(cur_y, next_y))
+                    for one_y in y_range:
+                        all_rock_coordinates.add((cur_x, one_y))
+                if next_y == cur_y:
+                    x_range = range(min(cur_x, next_x), max(cur_x, next_x))
+                    for one_x in x_range:
+                        all_rock_coordinates.add((one_x, cur_y))
+                cur_x = next_x
+                cur_y = next_y
+
+    all_blocks = {}
+    for x,y in all_rock_coordinates:
+        if x not in all_blocks:
+            all_blocks[x] = [y]
+        else:
+            all_blocks[x].insert(bisect(all_blocks[x], y), y)
+
+    # add floor
+
+    lowest_formation = 0
+    for x,y in all_rock_coordinates:
+        if y > lowest_formation:
+            lowest_formation = y
+
+    floor_level_y = lowest_formation + 2
+    floor_level_x_min = 500 - floor_level_y - 1
+    floor_level_x_max = 500 + floor_level_y + 1
+
+    for x in range(floor_level_x_min, floor_level_x_max):
+        if x not in all_blocks:
+            all_blocks[x] = [floor_level_y]
+        else:
+            all_blocks[x].insert(bisect(all_blocks[x], floor_level_y), floor_level_y)
+
+    cur_sand = 0
+    source_blocked = False
+
+    while True:
+        if source_blocked:
+            return cur_sand
+        cur_sand += 1
+        start_x = 500
+        start_y = 0
+        x_cur, y_cur = start_x, min(all_blocks[start_x]) - 1
+        left_available = True
+        right_available = True
+        while (left_available or right_available) and not source_blocked:
+            # GO DOWN LEFT
+            x_down_left, y_down_left = x_cur - 1, y_cur + 1
+            if x_down_left in all_blocks:
+                # in theory, should always be True
+                if y_down_left not in all_blocks[x_down_left]:
+                    # means that the down left is available
+                    # see where it moves
+
+                    position_to_insert = bisect(all_blocks[x_down_left], y_down_left)
+                    y_closest_down = all_blocks[x_down_left][position_to_insert] - 1
+                    x_cur, y_cur = x_down_left, y_closest_down
+                    continue
+                else:
+                    left_available = False
+            else:
+                print('This is not expected')
+
+            # GO DOWN RIGHT
+            x_down_right, y_down_right = x_cur + 1, y_cur + 1
+            if x_down_right in all_blocks:
+                # means it is not complete void
+                if y_down_right not in all_blocks[x_down_right]:
+                    # means that the down right is available
+                    # see where it moves
+                    position_to_insert = bisect(all_blocks[x_down_right], y_down_right)
+                    y_closest_down = all_blocks[x_down_right][position_to_insert] - 1
+                    x_cur, y_cur = x_down_right, y_closest_down
+                    continue
+                else:
+                    right_available = False
+            else:
+                print('This is not expected')
+
+        all_blocks[x_cur].insert(bisect(all_blocks[x_cur], y_cur), y_cur)
+
+        if x_cur == 500 and y_cur == 0:
+            source_blocked = True
 
 
 
@@ -1387,5 +1486,9 @@ if __name__ == '__main__':
     # print(divider_indices)
 
     # TASK 14.1
-    sand_before_void = find_rock_formations('data/day14')
-    print(sand_before_void)
+    # sand_before_void = find_sand_units_before_void('data/day14')
+    # print(sand_before_void)
+
+    # TASK 14.2
+    sand_before_blockage = find_sand_units_before_it_stops_falling('data/day14')
+    print(sand_before_blockage)
