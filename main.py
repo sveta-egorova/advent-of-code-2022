@@ -1383,6 +1383,41 @@ def find_sand_units_before_it_stops_falling(filename):
             source_blocked = True
 
 
+import re
+
+def find_area_without_beacons(filename, requested_y):
+
+    requested_y_coverage = set()
+    beacons_in_your_area = set()
+    pattern = '-?[0-9]+'
+    current_sensor = 0
+    with open(filename) as file:
+        for line in file:
+            current_sensor += 1
+            coordinates = re.findall(pattern, line)
+            x_sensor = int(coordinates[0])
+            y_sensor = int(coordinates[1])
+            x_beacon = int(coordinates[2])
+            y_beacon = int(coordinates[3])
+            distance_covered = abs(x_sensor - x_beacon) + abs(y_sensor - y_beacon)
+
+            if y_beacon == requested_y:
+                beacons_in_your_area.add(x_beacon)
+
+            distance_to_y_sensor = abs(requested_y - y_sensor)
+            if distance_to_y_sensor < distance_covered:
+                coverage_width_one_side = distance_covered - distance_to_y_sensor
+                coverage_per_line = [x for x in range(x_sensor - coverage_width_one_side,
+                                                      x_sensor + coverage_width_one_side + 1)]
+                requested_y_coverage.update(set(coverage_per_line))
+
+    for beacon in beacons_in_your_area:
+        requested_y_coverage.remove(beacon)
+
+    return requested_y_coverage
+
+
+
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
@@ -1490,5 +1525,9 @@ if __name__ == '__main__':
     # print(sand_before_void)
 
     # TASK 14.2
-    sand_before_blockage = find_sand_units_before_it_stops_falling('data/day14')
-    print(sand_before_blockage)
+    # sand_before_blockage = find_sand_units_before_it_stops_falling('data/day14')
+    # print(sand_before_blockage)
+
+    # TASK 15.1
+    cleared_area = find_area_without_beacons('data/day15', 2000000)
+    print(len(cleared_area))
