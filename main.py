@@ -1283,6 +1283,7 @@ def find_sand_units_before_void(filename):
 
         all_blocks[x_cur].insert(bisect(all_blocks[x_cur], y_cur), y_cur)
 
+
 def find_sand_units_before_it_stops_falling(filename):
 
     all_rock_coordinates = set()
@@ -1385,10 +1386,35 @@ def find_sand_units_before_it_stops_falling(filename):
 
 import re
 
-def find_area_without_beacons(filename, requested_y):
 
-    requested_y_coverage = set()
-    beacons_in_your_area = set()
+def find_list_intersection(lists_with_borders):
+
+    global_min = 99999999
+    global_max = -99999999
+    intersection_gaps = []
+    # num_gaps = 0
+    previous_list = None
+    for one_list in sorted(lists_with_borders):
+        if previous_list:
+            previous_max = max(previous_list[1], global_max)
+            if one_list[0] > previous_max:
+                # num_gaps += 1
+                gap_start = previous_max
+                gap_end = one_list[0]
+                intersection_gaps.append((gap_start, gap_end))
+        if one_list[0] < global_min:
+            global_min = one_list[0]
+        if one_list[1] > global_max:
+            global_max = one_list[1]
+
+        previous_list = one_list
+    return intersection_gaps, global_min, global_max
+
+
+def get_sensors_and_beacons(filename):
+
+    all_beacons = set()
+    all_sensors = []
     pattern = '-?[0-9]+'
     current_sensor = 0
     with open(filename) as file:
@@ -1400,27 +1426,118 @@ def find_area_without_beacons(filename, requested_y):
             x_beacon = int(coordinates[2])
             y_beacon = int(coordinates[3])
             distance_covered = abs(x_sensor - x_beacon) + abs(y_sensor - y_beacon)
+            all_sensors.append((x_sensor, y_sensor, distance_covered))
+            all_beacons.add((x_beacon, y_beacon))
 
-            if y_beacon == requested_y:
-                beacons_in_your_area.add(x_beacon)
+    return all_sensors, all_beacons
 
-            distance_to_y_sensor = abs(requested_y - y_sensor)
+
+def find_area_without_beacons(filename, requested_y):
+
+    y_coverage_borders = []
+    all_sensors, all_beacons = get_sensors_and_beacons(filename)
+
+    for x_sensor, y_sensor, distance_covered in all_sensors:
+        distance_to_y_sensor = abs(requested_y - y_sensor)
+        if distance_to_y_sensor < distance_covered:
+            coverage_width_one_side = distance_covered - distance_to_y_sensor
+            coverage_start_local = x_sensor - coverage_width_one_side
+            coverage_end_local = x_sensor + coverage_width_one_side
+            y_coverage_borders.append([coverage_start_local, coverage_end_local])
+
+    _, coverage_start_global, coverage_end_global = find_list_intersection(y_coverage_borders)
+    coverage_length = coverage_end_global - coverage_start_global + 1
+    for x_beacon, y_beacon in all_beacons:
+        if y_beacon == requested_y:
+            coverage_length -= 1
+
+    return coverage_length
+
+
+def find_distress_beacon(filename, grid_size=20):
+
+    all_sensors, all_beacons = get_sensors_and_beacons(filename)
+    for y_candidate in range(0, grid_size + 1):
+        if y_candidate % 100000 == 0:
+            print('analyzing y candidate: ', y_candidate)
+        y_coverage_borders = []
+        for x_sensor, y_sensor, distance_covered in all_sensors:
+            distance_to_y_sensor = abs(y_candidate - y_sensor)
             if distance_to_y_sensor < distance_covered:
                 coverage_width_one_side = distance_covered - distance_to_y_sensor
-                coverage_per_line = [x for x in range(x_sensor - coverage_width_one_side,
-                                                      x_sensor + coverage_width_one_side + 1)]
-                requested_y_coverage.update(set(coverage_per_line))
+                coverage_start_local = x_sensor - coverage_width_one_side
+                coverage_end_local = x_sensor + coverage_width_one_side
+                y_coverage_borders.append([coverage_start_local, coverage_end_local])
 
-    for beacon in beacons_in_your_area:
-        requested_y_coverage.remove(beacon)
+        intersection_gaps, _, _ = find_list_intersection(y_coverage_borders)
+        # print(intersection_gaps)
+        if len(intersection_gaps) > 0:
+            gap_y = y_candidate
+            gap_x = intersection_gaps[0][0] + 1
+            # print(y_candidate)
+            # print(intersection_gaps[0][0] + 1)
+            tuning_freq = gap_x * 4000000 + gap_y
+            return tuning_freq
 
-    return requested_y_coverage
 
+def draw_sensor_diagram(filename):
 
+    area_covered = {}
+    all_sensors = {}
+    pattern = '-?[0-9]+'
+    current_sensor = 0
+    with open(filename) as file:
+        for line in file:
+            current_sensor += 1
+            coordinates = re.findall(pattern, line)
+            x_sensor = int(coordinates[0])
+            y_sensor = int(coordinates[1])
+            x_beacon = int(coordinates[2])
+            y_beacon = int(coordinates[3])
+            if y_sensor not in all_sensors:
+                all_sensors[y_sensor] = [x_sensor]
+            else:
+                all_sensors[y_sensor].append(x_sensor)
+            distance_covered = abs(x_sensor - x_beacon) + abs(y_sensor - y_beacon)
+            for y in range(y_sensor - distance_covered, y_sensor + distance_covered + 1):
+
+                cover_width_one_side = distance_covered - abs(y_sensor - y)
+                coverage_per_line = [x for x in range(x_sensor - cover_width_one_side,
+                                                      x_sensor + cover_width_one_side + 1)]
+
+                if y not in area_covered:
+                    area_covered[y] = set(coverage_per_line)
+                else:
+                    area_covered[y].update(set(coverage_per_line))
+
+    coverage_diagram = ''
+
+    for y in range(-12,30):
+        for x in range(-10,35):
+            if y not in area_covered:
+                coverage_diagram += '.'
+            elif y in area_covered and y not in all_sensors:
+                if x in area_covered[y]:
+                    coverage_diagram += '#'
+                else:
+                    coverage_diagram += '.'
+            elif y in area_covered and y in all_sensors:
+                if x in all_sensors[y]:
+                    coverage_diagram += 'S'
+                elif x in area_covered[y]:
+                    coverage_diagram += '#'
+                else:
+                    coverage_diagram += '.'
+
+            if x == 34:
+                coverage_diagram += '\n'
+
+    print(coverage_diagram)
 
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
+
     # TASK 1.1
     # max_elf_sum = find_max_calories('data/day1')
     # print(max_elf_sum)
@@ -1529,5 +1646,12 @@ if __name__ == '__main__':
     # print(sand_before_blockage)
 
     # TASK 15.1
-    cleared_area = find_area_without_beacons('data/day15', 2000000)
-    print(len(cleared_area))
+    # start_time = time.time()
+    # num_elements = find_area_without_beacons('data/day15', 2000000)
+    # print(num_elements)
+    # print(f'it took: {time.time() - start_time}s')
+
+    # TASK 15.2
+    # draw_sensor_diagram('data/day15_short')
+    tuning_freq = find_distress_beacon('data/day15', 4000000)
+    print(tuning_freq)
