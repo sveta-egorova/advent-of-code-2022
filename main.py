@@ -1535,6 +1535,128 @@ def draw_sensor_diagram(filename):
     print(coverage_diagram)
 
 
+
+def get_valve_structure(filename):
+    pattern = r'Valve ([A-Z]+) has flow rate=([0-9]+); tunnel[s]? lead[s]? to valve[s]? ([A-Z, ]*)'
+
+    valve_directions = {}
+    valve_flow_rates = {}
+
+    with open(filename) as file:
+        for line in file:
+            regex_match = re.findall(pattern, line.strip())[0]
+            # print(regex_match)
+
+            valve = regex_match[0]
+            flow_rate = regex_match[1]
+            leads_to = regex_match[2].split(', ')
+            valve_directions[valve] = leads_to
+            valve_flow_rates[valve] = int(flow_rate)
+
+    return valve_directions, valve_flow_rates
+
+
+def traverse_valve_graph(cur_path, minutes_remaining, valve_directions, valve_states,
+                         valve_flow_rates, points_reached, max_points_reached, location):
+    # while minutes_remaining > 0:
+    if minutes_remaining == 0:
+        # print(cur_path)
+        if points_reached > max_points_reached:
+            max_points_reached = points_reached
+            print(cur_path)
+            print(max_points_reached)
+
+    elif minutes_remaining > 0:
+        for next_node in valve_directions[location]:
+            cur_path.append(next_node)
+            minutes_remaining -= 1
+            cur_path.append(minutes_remaining)
+
+            if minutes_remaining >= 1:
+                for action in ['open', 'ignore']:
+
+                    if not valve_states[next_node] and valve_flow_rates[next_node] > 0:
+                        if action == 'open':
+                            cur_path.append('open')
+                            valve_states[next_node] = True
+                            points_gained = minutes_remaining * valve_flow_rates[next_node]
+                            points_reached += points_gained
+                            minutes_remaining -= 1
+                            cur_path.append(minutes_remaining)
+                            traverse_valve_graph(cur_path, minutes_remaining, valve_directions, valve_states,
+                                                 valve_flow_rates, points_reached, max_points_reached, next_node)
+                        else:
+                            traverse_valve_graph(cur_path, minutes_remaining, valve_directions, valve_states,
+                                                 valve_flow_rates, points_reached, max_points_reached, next_node)
+                    else:
+                        traverse_valve_graph(cur_path, minutes_remaining, valve_directions, valve_states,
+                                             valve_flow_rates, points_reached, max_points_reached, next_node)
+
+            else:
+                traverse_valve_graph(cur_path, minutes_remaining, valve_directions, valve_states,
+                                     valve_flow_rates, points_reached, max_points_reached, next_node)
+
+
+
+def find_valve_opening_routes(filename):
+
+    valve_directions, valve_flow_rates = get_valve_structure(filename)
+    # cur_point = 'AA'
+    minutes_remaining = 30
+    max_points_reached = 0
+    possible_steps = valve_directions['AA']
+    valve_states = {}
+    for valve in valve_flow_rates:
+        valve_states[valve] = False
+
+    print(valve_states)
+    cur_path = ['AA']
+    cur_path.append(minutes_remaining)
+    points_reached = 0
+
+    traverse_valve_graph(cur_path, minutes_remaining, valve_directions, valve_states,
+                         valve_flow_rates, points_reached, max_points_reached, 'AA')
+
+    # while minutes_remaining > 0:
+    #     next_possible_steps = []
+    #     for location in possible_steps:
+    #         # step into that location
+    #         cur_path.append(location)
+    #         minutes_remaining -= 1
+    #         cur_path.append(minutes_remaining)
+    #
+    #         # do something with the valve
+    #         if minutes_remaining >= 1:
+    #             for action in ['open', 'ignore']:
+    #                 if not valve_states[location] and valve_flow_rates[location] > 0:
+    #                     if action == 'open':
+    #                         cur_path.append('open')
+    #                         valve_states[location] = True
+    #                         points_gained = minutes_remaining * valve_flow_rates[location]
+    #                         points_reached += points_gained
+    #                         minutes_remaining -= 1
+    #                         cur_path.append(minutes_remaining)
+    #                     else:
+    #                         pass
+    #                 else:
+    #                     pass
+    #
+    #         for next_step in valve_directions[location]:
+    #             next_possible_steps.append(next_step)
+    #
+    #         possible_steps = next_possible_steps
+    #
+    #         if minutes_remaining == 0:
+    #             # print(cur_path)
+    #             if points_reached > max_points_reached:
+    #                 max_points_reached = points_reached
+
+    print(max_points_reached)
+
+
+
+
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
 
@@ -1653,5 +1775,8 @@ if __name__ == '__main__':
 
     # TASK 15.2
     # draw_sensor_diagram('data/day15_short')
-    tuning_freq = find_distress_beacon('data/day15', 4000000)
-    print(tuning_freq)
+    # tuning_freq = find_distress_beacon('data/day15', 4000000)
+    # print(tuning_freq)
+
+    # TASK 16.1
+    find_valve_opening_routes('data/day16_short')
